@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VENOM COMBAT — Elite Fighting Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', sans-serif; background: #050505; color: #fff; overflow-x: hidden; }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
+
+  /* Canvas Background */
+  #particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+  /* Glitch Text Effect */
+  .glitch { position: relative; }
+  .glitch::before, .glitch::after {
+    content: attr(data-text);
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+  }
+  .glitch::before {
+    color: #ff0040;
+    animation: glitch-1 3s infinite linear alternate-reverse;
+    clip-path: inset(0 0 65% 0);
+  }
+  .glitch::after {
+    color: #00e5ff;
+    animation: glitch-2 2.5s infinite linear alternate-reverse;
+    clip-path: inset(65% 0 0 0);
+  }
+  @keyframes glitch-1 {
+    0%, 80% { transform: translate(0); }
+    85% { transform: translate(-5px, 2px); }
+    90% { transform: translate(5px, -2px); }
+    95% { transform: translate(-3px, 1px); }
+    100% { transform: translate(0); }
+  }
+  @keyframes glitch-2 {
+    0%, 80% { transform: translate(0); }
+    85% { transform: translate(5px, -2px); }
+    90% { transform: translate(-5px, 2px); }
+    95% { transform: translate(3px, -1px); }
+    100% { transform: translate(0); }
+  }
+
+  /* 3D Cube */
+  .cube-wrapper { perspective: 800px; width: 280px; height: 280px; }
+  .cube {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: rotateCube 12s infinite linear;
+  }
+  .cube-face {
+    position: absolute; width: 280px; height: 280px;
+    border: 1px solid rgba(59,130,246,0.3);
+    background: rgba(5,5,5,0.7);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 80px; font-weight: 900;
+    color: rgba(59,130,246,0.4);
+  }
+  .cube-face.front  { transform: rotateY(0deg) translateZ(140px); }
+  .cube-face.back   { transform: rotateY(180deg) translateZ(140px); }
+  .cube-face.right  { transform: rotateY(90deg) translateZ(140px); }
+  .cube-face.left   { transform: rotateY(-90deg) translateZ(140px); }
+  .cube-face.top    { transform: rotateX(90deg) translateZ(140px); }
+  .cube-face.bottom { transform: rotateX(-90deg) translateZ(140px); }
+  @keyframes rotateCube {
+    0%   { transform: rotateX(-20deg) rotateY(0deg); }
+    100% { transform: rotateX(-20deg) rotateY(360deg); }
+  }
+
+  /* Neon Glow Button */
+  .neon-btn {
+    position: relative; overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(59,130,246,0.3), inset 0 0 15px rgba(59,130,246,0.05);
+  }
+  .neon-btn:hover {
+    box-shadow: 0 0 30px rgba(59,130,246,0.6), 0 0 60px rgba(59,130,246,0.3), inset 0 0 20px rgba(59,130,246,0.1);
+    transform: translateY(-2px);
+  }
+  .neon-btn::before {
+    content: ''; position: absolute; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: conic-gradient(from 0deg, transparent, rgba(59,130,246,0.3), transparent 30%);
+    animation: spinBorder 4s linear infinite;
+  }
+  .neon-btn::after {
+    content: ''; position: absolute; inset: 2px;
+    background: #0a0a0a; border-radius: 10px; z-index: 0;
+  }
+  .neon-btn span { position: relative; z-index: 1; }
+  @keyframes spinBorder { to { transform: rotate(360deg); } }
+
+  /* 3D Tilt Cards */
+  .tilt-card {
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+  }
+  .tilt-card .card-content {
+    transform: translateZ(40px);
+    transition: transform 0.3s ease;
+  }
+  .tilt-card:hover .card-content { transform: translateZ(60px); }
+  .tilt-card .card-glow {
+    position: absolute; inset: 0; border-radius: 20px; opacity: 0;
+    transition: opacity 0.5s ease; pointer-events: none;
+  }
+  .tilt-card:hover .card-glow { opacity: 1; }
+
+  /* Floating Animation */
+  .float { animation: float 6s ease-in-out infinite; }
+  .float-delay { animation: float 6s ease-in-out 2s infinite; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  /* Pulse Ring */
+  .pulse-ring { position: relative; }
+  .pulse-ring::before, .pulse-ring::after {
+    content: ''; position: absolute; inset: -8px;
+    border: 2px solid rgba(59,130,246,0.4);
+    border-radius: 50%; animation: pulseRing 2s ease-out infinite;
+  }
+  .pulse-ring::after { animation-delay: 1s; }
+  @keyframes pulseRing {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  /* Scanning Line */
+  .scan-line {
+    position: absolute; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.6), transparent);
+    animation: scanDown 3s linear infinite;
+  }
+  @keyframes scanDown {
+    0% { top: -2px; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  /* Hover Underline */
+  .hover-line { position: relative; }
+  .hover-line::after {
+    content: ''; position: absolute; bottom: -4px; left: 0;
+    width: 0; height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    transition: width 0.4s ease;
+  }
+  .hover-line:hover::after { width: 100%; }
+
+  /* Reveal Animation */
+  .reveal {
+    opacity: 0; transform: translateY(40px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.active { opacity: 1; transform: translateY(0); }
+
+  /* Fighter Card Hover */
+  .fighter-card {
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .fighter-card:hover {
+    transform: translateY(-12px) scale(1.02);
+    border-color: rgba(59,130,246,0.4);
+    box-shadow: 0 20px 60px rgba(59,130,246,0.15), 0 0 0 1px rgba(59,130,246,0.2);
+  }
+  .fighter-card .fighter-img {
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    filter: grayscale(60%) brightness(0.8);
+  }
+  .fighter-card:hover .fighter-img {
+    filter: grayscale(0%) brightness(1);
+    transform: scale(1.1);
+  }
+  .fighter-card .overlay {
+    transition: all 0.5s ease;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%);
+  }
+  .fighter-card:hover .overlay {
+    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(59,130,246,0.1) 60%);
+  }
+
+  /* Stat Counter */
+  .stat-box {
+    position: relative; overflow: hidden;
+    transition: all 0.4s ease;
+  }
+  .stat-box::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(59,130,246,0.05), transparent);
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  .stat-box:hover::before { opacity: 1; }
+  .stat-box:hover { transform: translateY(-4px); border-color: rgba(59,130,246,0.3); }
+
+  /* Discipline Card */
+  .discipline-card {
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(23,23,23,0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .discipline-card:hover {
+    background: rgba(23,23,23,0.8);
+    border-color: rgba(59,130,246,0.3);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+  }
+  .discipline-card .icon-wrap {
+    transition: all 0.5s ease;
+  }
+  .discipline-card:hover .icon-wrap {
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 0 25px rgba(59,130,246,0.3);
+  }
+
+  /* CTA Pulse */
+  .cta-glow {
+    animation: ctaGlow 3s ease-in-out infinite;
+  }
+  @keyframes ctaGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(59,130,246,0.2); }
+    50% { box-shadow: 0 0 40px rgba(59,130,246,0.5), 0 0 80px rgba(59,130,246,0.2); }
+  }
+
+  /* Horizontal Scroll Section */
+  .h-scroll-container { overflow-x: auto; scrollbar-width: none; }
+  .h-scroll-container::-webkit-scrollbar { display: none; }
+
+  /* Magnetic Button */
+  .magnetic-btn { transition: transform 0.3s ease; }
+
+  /* Text Gradient Animation */
+  .animated-gradient {
+    background: linear-gradient(270deg, #3b82f6, #60a5fa, #93c5fd, #3b82f6);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientShift 4s ease infinite;
+  }
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Grid Pattern */
+  .grid-pattern {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* Marquee */
+  .marquee { overflow: hidden; white-space: nowrap; }
+  .marquee-inner {
+    display: inline-block;
+    animation: marquee 20s linear infinite;
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Toast Notification */
+  .toast {
+    position: fixed; bottom: 30px; right: 30px;
+    background: rgba(23,23,23,0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 12px; padding: 16px 24px;
+    transform: translateY(120px); opacity: 0;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1000;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Mobile Menu */
+  .mobile-menu {
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mobile-menu.open { transform: translateX(0); }
+
+  /* Skew Hover */
+  .skew-hover { transition: all 0.4s ease; }
+  .skew-hover:hover { transform: skewX(-3deg) translateX(4px); }
+</style>
+</head>
+<body class="grid-pattern">
+
+<!-- Particle Canvas -->
+<canvas id="particleCanvas"></canvas>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <div class="flex items-center gap-3">
+    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+    <span class="text-sm text-neutral-300" id="toastMsg">Message sent successfully!</span>
+  </div>
+</div>
+
+<!-- Mobile Menu -->
+<div id="mobileMenu" class="mobile-menu fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8">
+  <button onclick="toggleMobile()" class="absolute top-6 right-6 text-white"><i data-lucide="x" class="w-7 h-7"></i></button>
+  <a href="#home" onclick="toggleMobile()" class="text-2xl font-medium hover-line">Home</a>
+  <a href="#fighters" onclick="toggleMobile()" class="text-2xl font-medium hover-line">Fighters</a>
+  <a href="#disciplines" onclick="toggleMobile()" class="text-2xl font-medium hover-line">Disciplines</a>
+  <a href="#stats" onclick="toggleMobile()" class="text-2xl font-medium hover-line">Records</a>
+  <a href="#contact" onclick="toggleMobile()" class="text-2xl font-medium hover-line">Contact</a>
+</div>
+
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-40 h-16 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5">
+  <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+    <a href="#home" class="flex items-center gap-3 group">
+      <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-shadow duration-300">
+        <i data-lucide="swords" class="w-4 h-4 text-white"></i>
+      </div>
+      <span class="text-sm font-semibold tracking-wider uppercase">Venom Combat</span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#home" class="text-sm text-neutral-400 hover:text-white transition-colors hover-line">Home</a>
+      <a href="#fighters" class="text-sm text-neutral-400 hover:text-white transition-colors hover-line">Fighters</a>
+      <a href="#disciplines" class="text-sm text-neutral-400 hover:text-white transition-colors hover-line">Disciplines</a>
+      <a href="#stats" class="text-sm text-neutral-400 hover:text-white transition-colors hover-line">Records</a>
+      <a href="#contact" class="text-sm text-neutral-400 hover:text-white transition-colors hover-line">Contact</a>
+    </div>
+    <div class="hidden md:flex items-center gap-4">
+      <button class="neon-btn rounded-xl px-6 py-2.5 cursor-pointer magnetic-btn" onclick="showToast('Welcome to Venom Combat!')">
+        <span class="text-sm font-medium text-white">Join Now</span>
+      </button>
+    </div>
+    <button onclick="toggleMobile()" class="md:hidden text-white"><i data-lucide="menu" class="w-6 h-6"></i></button>
+  </div>
+</nav>
+
+<!-- HERO SECTION -->
+<section id="home" class="relative min-h-screen flex items-center pt-16 overflow-hidden">
+  <!-- Background Glow -->
+  <div class="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] float"></div>
+  <div class="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-blue-400/5 rounded-full blur-[100px] float-delay"></div>
+
+  <div class="max-w-7xl mx-auto px-6 w-full grid md:grid-cols-2 gap-12 items-center relative z-10">
+    <!-- Left Content -->
+    <div class="space-y-8">
+      <div class="flex items-center gap-3 reveal">
+        <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+        <span class="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">Elite Fighting Academy — Est. 2019</span>
+      </div>
+
+      <h1 class="text-5xl md:text-7xl lg:text-8xl font-medium leading-[0.9] tracking-tight reveal" style="transition-delay:0.1s">
+        <span class="glitch" data-text="VENOM">VENOM</span><br>
+        <span class="animated-gradient">COMBAT</span>
+      </h1>
+
+      <p class="text-neutral-400 text-base font-light leading-relaxed max-w-md reveal" style="transition-delay:0.2s">
+        Where warriors are forged. Master the art of combat through world-class training, elite coaching, and an unbreakable brotherhood.
+      </p>
+
+      <div class="flex flex-wrap gap-4 reveal" style="transition-delay:0.3s">
+        <a href="#contact" class="neon-btn rounded-xl px-8 py-4 cursor-pointer inline-block magnetic-btn">
+          <span class="text-sm font-medium flex items-center gap-2">
+            Start Training <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </span>
+        </a>
+        <button onclick="document.getElementById('videoModal').classList.remove('hidden')" class="rounded-xl px-8 py-4 border border-white/10 hover:border-white/20 transition-all duration-300 flex items-center gap-3 group cursor-pointer bg-transparent text-white">
+          <div class="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center group-hover:border-blue-500/50 group-hover:bg-blue-500/10 transition-all">
+            <i data-lucide="play" class="w-3 h-3 ml-0.5"></i>
+          </div>
+          <span class="text-sm font-medium">Watch Reel</span>
+        </button>
+      </div>
+
+      <!-- Mini Stats -->
+      <div class="flex gap-8 pt-4 reveal" style="transition-delay:0.4s">
+        <div>
+          <div class="text-2xl font-semibold counter" data-target="150">0</div>
+          <div class="text-[10px] uppercase tracking-wider text-neutral-500 mt-1">Active Fighters</div>
+        </div>
+        <div class="w-px bg-white/10"></div>
+        <div>
+          <div class="text-2xl font-semibold counter" data-target="47">0</div>
+          <div class="text-[10px] uppercase tracking-wider text-neutral-500 mt-1">Champions</div>
+        </div>
+        <div class="w-px bg-white/10"></div>
+        <div>
+          <div class="text-2xl font-semibold counter" data-target="12">0</div>
+          <div class="text-[10px] uppercase tracking-wider text-neutral-500 mt-1">Disciplines</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: 3D Cube -->
+    <div class="flex items-center justify-center reveal" style="transition-delay:0.3s">
+      <div class="cube-wrapper">
+        <div class="cube">
+          <div class="cube-face front"><img src="goo.png" alt=""></div>
+          <div class="cube-face back"><img src="momy.webp" alt=""></div>
+          <div class="cube-face right">
+            <i data-lucide="swords" style="font-size:60px"></i><img src="prof.jpg" alt="">
+          </div>
+          <div class="cube-face left">
+            <i data-lucide="shield" style="font-size:60px"></i><img src="man-coder-portrait-young-cool-program-sunglasses-contrast-dramatic-blue-red-colors-code-symbols-84415891.webp" alt="">
+          </div>
+          <div class="cube-face top">
+            <i data-lucide="flame" style="font-size:60px"></i>
+          </div>
+          <div class="cube-face bottom">
+            <i data-lucide="zap" style="font-size:60px"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll Indicator -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
+    <span class="text-[10px] uppercase tracking-widest text-neutral-500">Scroll</span>
+    <i data-lucide="chevron-down" class="w-4 h-4 text-neutral-500"></i>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="relative z-10 border-y border-white/5 py-4 overflow-hidden">
+  <div class="marquee">
+    <div class="marquee-inner">
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">MUAY THAI</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">BRAZILIAN JIU-JITSU</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">BOXING</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">MMA</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">KRAV MAGA</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">WRESTLING</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">KICKBOXING</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">MUAY THAI</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">BRAZILIAN JIU-JITSU</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">BOXING</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">MMA</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">KRAV MAGA</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">WRESTLING</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+      <span class="text-sm text-neutral-600 font-medium uppercase tracking-widest mx-8">KICKBOXING</span>
+      <span class="text-blue-500/40 mx-4">✦</span>
+    </div>
+  </div>
+</div>
+
+<!-- FIGHTERS SECTION -->
+<section id="fighters" class="relative z-10 py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-16">
+      <div class="reveal">
+        <span class="text-[10px] font-medium uppercase tracking-[0.2em] text-blue-400">Our Warriors</span>
+        <h2 class="text-3xl md:text-4xl font-medium tracking-tight mt-3">Elite <span class="animated-gradient">Fighters</span></h2>
+      </div>
+      <p class="text-neutral-400 text-sm font-light max-w-sm reveal" style="transition-delay:0.1s">
+        Meet the champions who train with us. Each one a testament to the Venom method.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Fighter 1 -->
+      <div class="fighter-card rounded-2xl overflow-hidden relative h-[420px] reveal" style="transition-delay:0.1s">
+        <img src="https://picsum.photos/seed/fighter-muaythai/600/800.jpg" alt="Fighter" class="fighter-img absolute inset-0 w-full h-full object-cover">
+        <div class="overlay absolute inset-0"></div>
+        <div class="absolute top-4 left-4 flex gap-2">
+          <span class="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] font-medium uppercase tracking-wider">Champion</span>
+          <span class="px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-neutral-300 text-[10px] font-medium uppercase tracking-wider">185 lbs</span>
+        </div>
+        <div class="scan-line"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-6">
+          <h3 class="text-xl font-medium">Marcus "The Viper" Cole</h3>
+          <p class="text-neutral-400 text-sm mt-1">Muay Thai • MMA</p>
+          <div class="flex gap-6 mt-4">
+            <div><span class="text-blue-400 font-semibold">24</span><span class="text-neutral-500 text-sm ml-1">W</span></div>
+            <div><span class="text-neutral-400 font-semibold">2</span><span class="text-neutral-500 text-sm ml-1">L</span></div>
+            <div><span class="text-neutral-400 font-semibold">18</span><span class="text-neutral-500 text-sm ml-1">KO</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fighter 2 -->
+      <div class="fighter-card rounded-2xl overflow-hidden relative h-[420px] reveal" style="transition-delay:0.2s">
+        <img src="https://picsum.photos/seed/fighter-bjj-woman/600/800.jpg" alt="Fighter" class="fighter-img absolute inset-0 w-full h-full object-cover">
+        <div class="overlay absolute inset-0"></div>
+        <div class="absolute top-4 left-4 flex gap-2">
+          <span class="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[10px] font-medium uppercase tracking-wider">#1 Ranked</span>
+          <span class="px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-neutral-300 text-[10px] font-medium uppercase tracking-wider">125 lbs</span>
+        </div>
+        <div class="scan-line" style="animation-delay: 1s;"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-6">
+          <h3 class="text-xl font-medium">Aisha "Storm" Rahman</h3>
+          <p class="text-neutral-400 text-sm mt-1">BJJ • Kickboxing</p>
+          <div class="flex gap-6 mt-4">
+            <div><span class="text-blue-400 font-semibold">19</span><span class="text-neutral-500 text-sm ml-1">W</span></div>
+            <div><span class="text-neutral-400 font-semibold">1</span><span class="text-neutral-500 text-sm ml-1">L</span></div>
+            <div><span class="text-neutral-400 font-semibold">8</span><span class="text-neutral-500 text-sm ml-1">SUB</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fighter 3 -->
+      <div class="fighter-card rounded-2xl overflow-hidden relative h-[420px] reveal md:col-span-2 lg:col-span-1" style="transition-delay:0.3s">
+        <img src="https://picsum.photos/seed/fighter-boxer-man/600/800.jpg" alt="Fighter" class="fighter-img absolute inset-0 w-full h-full object-cover">
+        <div class="overlay absolute inset-0"></div>
+        <div class="absolute top-4 left-4 flex gap-2">
+          <span class="px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 text-[10px] font-medium uppercase tracking-wider">Rising Star</span>
+          <span class="px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-neutral-300 text-[10px] font-medium uppercase tracking-wider">205 lbs</span>
+        </div>
+        <div class="scan-line" style="animation-delay: 2s;"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-6">
+          <h3 class="text-xl font-medium">Dmitri "Iron Fist" Volkov</h3>
+          <p class="text-neutral-400 text-sm mt-1">Boxing • SAMBO</p>
+          <div class="flex gap-6 mt-4">
+            <div><span class="text-blue-400 font-semibold">31</span><span class="text-neutral-500 text-sm ml-1">W</span></div>
+            <div><span class="text-neutral-400 font-semibold">4</span><span class="text-neutral-500 text-sm ml-1">L</span></div>
+            <div><span class="text-neutral-400 font-semibold">27</span><span class="text-neutral-500 text-sm ml-1">KO</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DISCIPLINES SECTION -->
+<section id="disciplines" class="relative z-10 py-24 md:py-32">
+  <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px]"></div>
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-16 reveal">
+      <span class="text-[10px] font-medium uppercase tracking-[0.2em] text-blue-400">Master The Art</span>
+      <h2 class="text-3xl md:text-4xl font-medium tracking-tight mt-3">Combat <span class="animated-gradient">Disciplines</span></h2>
+      <p class="text-neutral-400 text-sm font-light max-w-lg mx-auto mt-4">From striking to grappling, we offer world-class training in every major combat discipline.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="discipline-card rounded-2xl p-8 reveal" style="transition-delay:0.05s">
+        <div class="icon-wrap w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+          <i data-lucide="swords" class="w-6 h-6 text-blue-400"></i>
+        </div>
+        <h3 class="text-lg font-medium mb-2">Muay Thai</h3>
+        <p class="text-neutral-400 text-sm font-light leading-relaxed">The art of eight limbs. Devastating elbows, knees, punches, and kicks forged in the fires of Thailand.</p>
+        <div class="flex items-center gap-2 mt-6 text-blue-400 text-sm font-medium skew-hover cursor-pointer">
+          <span>Learn More</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+
+      <div class="discipline-card rounded-2xl p-8 reveal" style="transition-delay:0.1s">
+        <div class="icon-wrap w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+          <i data-lucide="shield" class="w-6 h-6 text-blue-400"></i>
+        </div>
+        <h3 class="text-lg font-medium mb-2">Brazilian Jiu-Jitsu</h3>
+        <p class="text-neutral-400 text-sm font-light leading-relaxed">Ground fighting mastery. Chokes, joint locks, and submissions that neutralize any opponent.</p>
+        <div class="flex items-center gap-2 mt-6 text-blue-400 text-sm font-medium skew-hover cursor-pointer">
+          <span>Learn More</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+
+      <div class="discipline-card rounded-2xl p-8 reveal" style="transition-delay:0.15s">
+        <div class="icon-wrap w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+          <i data-lucide="target" class="w-6 h-6 text-blue-400"></i>
+        </div>
+        <h3 class="text-lg font-medium mb-2">Boxing</h3>
+        <p class="text-neutral-400 text-sm font-light leading-relaxed">Sweet science precision. Footwork, head movement, and knockout power through technical mastery.</p>
+        <div class="flex items-center gap-2 mt-6 text-blue-400 text-sm font-medium skew-hover cursor-pointer">
+          <span>Learn More</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+
+      <div class="discipline-card rounded-2xl p-8 reveal" style="transition-delay:0.2s">
+        <div class="icon-wrap w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+          <i data-lucide="flame" class="w-6 h-6 text-blue-400"></i>
+        </div>
+        <h3 class="text-lg font-medium mb-2">MMA</h3>
+        <p class="text-neutral-400 text-sm font-light leading-relaxed">The ultimate test. Blend striking, grappling, and wrestling into a complete fighting system.</p>
+        <div class="flex items-center gap-2 mt-6 text-blue-400 text-sm font-medium skew-hover cursor-pointer">
+          <span>Learn More</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+
+      <div class="discipline-card rounded-2xl p-8 reveal" style="transition-delay:0.25s">
+        <div class="icon-wrap w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+          <i data-lucide="zap" class="w-6 h-6 text-blue-400"></i>
+        </div>
+        <h3 class="text-lg font-medium mb-2">Krav Maga</h3>
+        <p class="text-neutral-400 text-sm font-light leading-relaxed">Battle-tested self-defense. Real-world combat techniques from Israeli special forces.</p>
+        <div class="flex items-center gap-2 mt-6 text-blue-400 text-sm font-medium skew-hover cursor-pointer">
+          <span>Learn More</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+
+      <div class="discipline-card rounded-2xl p-8 reveal" style="transition-delay:0.3s">
+        <div class="icon-wrap w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+          <i data-lucide="circle-dot" class="w-6 h-6 text-blue-400"></i>
+        </div>
+        <h3 class="text-lg font-medium mb-2">Wrestling</h3>
+        <p class="text-neutral-400 text-sm font-light leading-relaxed">The foundation of fighting. Takedowns, control, and relentless pressure that dominates every matchup.</p>
+        <div class="flex items-center gap-2 mt-6 text-blue-400 text-sm font-medium skew-hover cursor-pointer">
+          <span>Learn More</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS / RECORDS SECTION -->
+<section id="stats" class="relative z-10 py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-16 reveal">
+      <span class="text-[10px] font-medium uppercase tracking-[0.2em] text-blue-400">By The Numbers</span>
+      <h2 class="text-3xl md:text-4xl font-medium tracking-tight mt-3">Our <span class="animated-gradient">Dominance</span></h2>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 reveal" style="transition-delay:0.1s">
+      <div class="stat-box rounded-2xl border border-white/5 p-6 text-center bg-neutral-900/30">
+        <div class="text-3xl md:text-4xl font-bold text-blue-400 counter" data-target="342">0</div>
+        <div class="text-[10px] uppercase tracking-wider text-neutral-500 mt-2">Total Wins</div>
+      </div>
+      <div class="stat-box rounded-2xl border border-white/5 p-6 text-center bg-neutral-900/30">
+        <div class="text-3xl md:text-4xl font-bold text-white counter" data-target="89">0</div>
+        <div class="text-[10px] uppercase tracking-wider text-neutral-500 mt-2">Knockouts</div>
+      </div>
+      <div class="stat-box rounded-2xl border border-white/5 p-6 text-center bg-neutral-900/30">
+        <div class="text-3xl md:text-4xl font-bold text-white counter" data-target="47">0</div>
+        <div class="text-[10px] uppercase tracking-wider text-neutral-500 mt-2">Championships</div>
+      </div>
+      <div class="stat-box rounded-2xl border border-white/5 p-6 text-center bg-neutral-900/30">
+        <div class="text-3xl md:text-4xl font-bold text-white counter" data-target="96">0</div>
+        <div class="text-[10px] uppercase tracking-wider text-neutral-500 mt-2">Win Rate %</div>
+      </div>
+    </div>
+
+    <!-- 3D Tilt Feature Cards -->
+    <div class="grid md:grid-cols-2 gap-6 mt-12">
+      <div class="tilt-card rounded-2xl border border-white/5 bg-neutral-900/30 p-8 relative overflow-hidden reveal" style="transition-delay:0.15s" onmousemove="tiltCard(event, this)" onmouseleave="resetTilt(this)">
+        <div class="card-glow" style="background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(59,130,246,0.1), transparent 60%);"></div>
+        <div class="card-content relative z-10">
+          <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+            <i data-lucide="trophy" class="w-6 h-6 text-blue-400"></i>
+          </div>
+          <h3 class="text-xl font-medium mb-3">Competition Ready</h3>
+          <p class="text-neutral-400 text-sm font-light leading-relaxed">Our fighters compete at the highest levels — from amateur circuits to professional championships worldwide.</p>
+        </div>
+      </div>
+
+      <div class="tilt-card rounded-2xl border border-white/5 bg-neutral-900/30 p-8 relative overflow-hidden reveal" style="transition-delay:0.2s" onmousemove="tiltCard(event, this)" onmouseleave="resetTilt(this)">
+        <div class="card-glow" style="background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(59,130,246,0.1), transparent 60%);"></div>
+        <div class="card-content relative z-10">
+          <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+            <i data-lucide="users" class="w-6 h-6 text-blue-400"></i>
+          </div>
+          <h3 class="text-xl font-medium mb-3">World-Class Coaches</h3>
+          <p class="text-neutral-400 text-sm font-light leading-relaxed">Former champions and elite trainers with decades of experience guiding every step of your journey.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCHEDULE PREVIEW -->
+<section class="relative z-10 py-24 md:py-32 border-y border-white/5">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 reveal">
+      <div>
+        <span class="text-[10px] font-medium uppercase tracking-[0.2em] text-blue-400">Weekly Schedule</span>
+        <h2 class="text-3xl md:text-4xl font-medium tracking-tight mt-3">Training <span class="animated-gradient">Sessions</span></h2>
+      </div>
+    </div>
+
+    <div class="h-scroll-container">
+      <div class="flex gap-4 pb-4" style="min-width: max-content;">
+        <div class="w-64 rounded-2xl border border-white/5 bg-neutral-900/30 p-6 hover:border-blue-500/30 transition-all duration-300 hover:-translate-y-2 cursor-pointer">
+          <div class="text-blue-400 text-[10px] font-medium uppercase tracking-wider">Monday</div>
+          <h4 class="text-lg font-medium mt-2">Muay Thai Fundamentals</h4>
+          <div class="flex items-center gap-2 mt-4 text-neutral-400 text-sm">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i><span>06:00 - 07:30 AM</span>
+          </div>
+          <div class="flex items-center gap-2 mt-2 text-neutral-400 text-sm">
+            <i data-lucide="user" class="w-3.5 h-3.5"></i><span>Coach Rivera</span>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px]">Beginner</span>
+            <span class="px-2 py-1 rounded bg-white/5 text-neutral-400 text-[10px]">All Levels</span>
+          </div>
+        </div>
+
+        <div class="w-64 rounded-2xl border border-white/5 bg-neutral-900/30 p-6 hover:border-blue-500/30 transition-all duration-300 hover:-translate-y-2 cursor-pointer">
+          <div class="text-blue-400 text-[10px] font-medium uppercase tracking-wider">Tuesday</div>
+          <h4 class="text-lg font-medium mt-2">BJJ Advanced Rolling</h4>
+          <div class="flex items-center gap-2 mt-4 text-neutral-400 text-sm">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i><span>18:00 - 19:30 PM</span>
+          </div>
+          <div class="flex items-center gap-2 mt-2 text-neutral-400 text-sm">
+            <i data-lucide="user" class="w-3.5 h-3.5"></i><span>Coach Mendes</span>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <span class="px-2 py-1 rounded bg-red-500/10 text-red-400 text-[10px]">Advanced</span>
+          </div>
+        </div>
+
+        <div class="w-64 rounded-2xl border border-white/5 bg-neutral-900/30 p-6 hover:border-blue-500/30 transition-all duration-300 hover:-translate-y-2 cursor-pointer">
+          <div class="text-blue-400 text-[10px] font-medium uppercase tracking-wider">Wednesday</div>
+          <h4 class="text-lg font-medium mt-2">Boxing Sparring</h4>
+          <div class="flex items-center gap-2 mt-4 text-neutral-400 text-sm">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i><span>12:00 - 13:30 PM</span>
+          </div>
+          <div class="flex items-center gap-2 mt-2 text-neutral-400 text-sm">
+            <i data-lucide="user" class="w-3.5 h-3.5"></i><span>Coach Jackson</span>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <span class="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400 text-[10px]">Intermediate</span>
+          </div>
+        </div>
+
+        <div class="w-64 rounded-2xl border border-white/5 bg-neutral-900/30 p-6 hover:border-blue-500/30 transition-all duration-300 hover:-translate-y-2 cursor-pointer">
+          <div class="text-blue-400 text-[10px] font-medium uppercase tracking-wider">Thursday</div>
+          <h4 class="text-lg font-medium mt-2">MMA Conditioning</h4>
+          <div class="flex items-center gap-2 mt-4 text-neutral-400 text-sm">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i><span>07:00 - 08:30 AM</span>
+          </div>
+          <div class="flex items-center gap-2 mt-2 text-neutral-400 text-sm">
+            <i data-lucide="user" class="w-3.5 h-3.5"></i><span>Coach Volkov</span>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px]">All Levels</span>
+          </div>
+        </div>
+
+        <div class="w-64 rounded-2xl border border-white/5 bg-neutral-900/30 p-6 hover:border-blue-500/30 transition-all duration-300 hover:-translate-y-2 cursor-pointer">
+          <div class="text-blue-400 text-[10px] font-medium uppercase tracking-wider">Friday</div>
+          <h4 class="text-lg font-medium mt-2">Krav Maga Self-Defense</h4>
+          <div class="flex items-center gap-2 mt-4 text-neutral-400 text-sm">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i><span>17:00 - 18:30 PM</span>
+          </div>
+          <div class="flex items-center gap-2 mt-2 text-neutral-400 text-sm">
+            <i data-lucide="user" class="w-3.5 h-3.5"></i><span>Coach Levy</span>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px]">Beginner</span>
+            <span class="px-2 py-1 rounded bg-white/5 text-neutral-400 text-[10px]">Practical</span>
+          </div>
+        </div>
+
+        <div class="w-64 rounded-2xl border border-white/5 bg-neutral-900/30 p-6 hover:border-blue-500/30 transition-all duration-300 hover:-translate-y-2 cursor-pointer">
+          <div class="text-blue-400 text-[10px] font-medium uppercase tracking-wider">Saturday</div>
+          <h4 class="text-lg font-medium mt-2">Open Mat / Sparring</h4>
+          <div class="flex items-center gap-2 mt-4 text-neutral-400 text-sm">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i><span>10:00 - 13:00 PM</span>
+          </div>
+          <div class="flex items-center gap-2 mt-2 text-neutral-400 text-sm">
+            <i data-lucide="user" class="w-3.5 h-3.5"></i><span>All Coaches</span>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <span class="px-2 py-1 rounded bg-green-500/10 text-green-400 text-[10px]">Open</span>
+            <span class="px-2 py-1 rounded bg-white/5 text-neutral-400 text-[10px]">Free Members</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA SECTION -->
+<section id="contact" class="relative z-10 py-24 md:py-32">
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <div class="w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px]"></div>
+  </div>
+
+  <div class="max-w-4xl mx-auto px-6 relative">
+    <div class="cta-glow rounded-3xl border border-white/10 bg-neutral-900/50 backdrop-blur-sm p-8 md:p-16 text-center relative overflow-hidden reveal">
+      <div class="scan-line"></div>
+      <div class="pulse-ring w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mx-auto mb-8">
+        <i data-lucide="flame" class="w-7 h-7 text-blue-400"></i>
+      </div>
+      <h2 class="text-3xl md:text-5xl font-medium tracking-tight mb-4">Ready to <span class="animated-gradient">Fight?</span></h2>
+      <p class="text-neutral-400 text-sm font-light max-w-md mx-auto mb-10">Your first session is free. Step on the mat, feel the energy, and decide if you have what it takes.</p>
+
+      <form id="contactForm" onsubmit="handleSubmit(event)" class="max-w-md mx-auto space-y-4 text-left mb-8">
+        <div>
+          <input type="text" placeholder="Your Name" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500/50 transition-colors">
+        </div>
+        <div>
+          <input type="email" placeholder="Email Address" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500/50 transition-colors">
+        </div>
+        <div>
+          <select class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3.5 text-sm text-neutral-500 focus:outline-none focus:border-blue-500/50 transition-colors appearance-none cursor-pointer" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23737373%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>'); background-repeat: no-repeat; background-position: right 16px center;">
+            <option value="" disabled selected>Select Discipline</option>
+            <option value="muay-thai">Muay Thai</option>
+            <option value="bjj">Brazilian Jiu-Jitsu</option>
+            <option value="boxing">Boxing</option>
+            <option value="mma">MMA</option>
+            <option value="krav-maga">Krav Maga</option>
+            <option value="wrestling">Wrestling</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full neon-btn rounded-xl px-8 py-4 cursor-pointer magnetic-btn">
+          <span class="text-sm font-medium flex items-center justify-center gap-2">
+            Book Free Session <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </span>
+        </button>
+      </form>
+
+      <p class="text-neutral-600 text-xs">No commitment required. Cancel anytime.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="relative z-10 border-t border-white/5 py-12">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid md:grid-cols-4 gap-8 mb-12">
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+            <i data-lucide="swords" class="w-4 h-4 text-white"></i>
+          </div>
+          <span class="text-sm font-semibold tracking-wider uppercase">Venom Combat</span>
+        </div>
+        <p class="text-neutral-500 text-sm font-light leading-relaxed">Where warriors are forged through discipline, dedication, and relentless training.</p>
+      </div>
+      <div>
+        <h4 class="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400 mb-4">Disciplines</h4>
+        <ul class="space-y-2">
+          <li><a href="#" class="text-neutral-500 text-sm hover:text-white transition-colors hover-line">Muay Thai</a></li>
+          <li><a href="#" class="text-neutral-500 text-sm hover:text-white transition-colors hover-line">BJJ</a></li>
+          <li><a href="#" class="text-neutral-500 text-sm hover:text-white transition-colors hover-line">Boxing</a></li>
+          <li><a href="#" class="text-neutral-500 text-sm hover:text-white transition-colors hover-line">MMA</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400 mb-4">Academy</h4>
+        <ul class="space-y-2">
+          <li><a href="#" class="text-neutral-500 text-sm hover:text-white transition-colors hover-line">About Us</a></li>
+          <li><a href="#" class="text-neutral-500 text-sm hover:text-white transition-colors hover-line">Coaches</a></li>
+          <li><a href="#" class="text-neutral-500 text-sm hover:text-white transition-colors hover-line">Schedule</a></li>
+          <li><a href="#" class="text-neutral-500 text-sm hover:text-white transition-colors hover-line">Pricing</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400 mb-4">Connect</h4>
+        <div class="flex gap-3">
+          <a href="#" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/30 transition-all duration-300">
+            <i data-lucide="instagram" class="w-4 h-4 text-neutral-400"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/30 transition-all duration-300">
+            <i data-lucide="youtube" class="w-4 h-4 text-neutral-400"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/30 transition-all duration-300">
+            <i data-lucide="twitter" class="w-4 h-4 text-neutral-400"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+      <p class="text-neutral-600 text-xs">© 2025 Venom Combat. All rights reserved.</p>
+      <div class="flex gap-6">
+        <a href="#" class="text-neutral-600 text-xs hover:text-neutral-400 transition-colors">Privacy</a>
+        <a href="#" class="text-neutral-600 text-xs hover:text-neutral-400 transition-colors">Terms</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- VIDEO MODAL -->
+<div id="videoModal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-6" onclick="this.classList.add('hidden')">
+  <div class="relative max-w-4xl w-full aspect-video rounded-2xl overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center" onclick="event.stopPropagation()">
+    <div class="text-center">
+      <i data-lucide="play-circle" class="w-16 h-16 text-blue-400 mx-auto mb-4"></i>
+      <p class="text-neutral-400 text-sm">Video reel placeholder — integrate your content here</p>
+      <button onclick="document.getElementById('videoModal').classList.add('hidden')" class="mt-6 px-6 py-2 rounded-xl bg-white/5 border border-white/10 text-sm hover:bg-white/10 transition-colors">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Initialize Lucide Icons
+  lucide.createIcons();
+
+  // ===== PARTICLE SYSTEM =====
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let mouse = { x: 0, y: 0 };
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  class Particle {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 1.5 + 0.5;
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.speedY = (Math.random() - 0.5) * 0.3;
+      this.opacity = Math.random() * 0.4 + 0.1;
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(59, 130, 246, ${this.opacity})`;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+  function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    // Draw connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(59, 130, 246, ${0.06 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
+
+  // ===== MOUSE TRACKING =====
+  document.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  // ===== 3D TILT CARD EFFECT =====
+  function tiltCard(e, el) {
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = (y - centerY) / 20;
+    const rotateY = (centerX - x) / 20;
+
+    el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    el.style.setProperty('--mouse-x', `${(x / rect.width) * 100}%`);
+    el.style.setProperty('--mouse-y', `${(y / rect.height) * 100}%`);
+  }
+
+  function resetTilt(el) {
+    el.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+  }
+
+  // ===== MAGNETIC BUTTON =====
+  document.querySelectorAll('.magnetic-btn').forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      btn.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px)`;
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.transform = 'translate(0, 0)';
+    });
+  });
+
+  // ===== SCROLL REVEAL =====
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ===== COUNTER ANIMATION =====
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const target = parseInt(el.dataset.target);
+        let current = 0;
+        const increment = target / 60;
+        const timer = setInterval(() => {
+          current += increment;
+          if (current >= target) {
+            el.textContent = target;
+            clearInterval(timer);
+          } else {
+            el.textContent = Math.floor(current);
+          }
+        }, 25);
+        counterObserver.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('.counter').forEach(el => counterObserver.observe(el));
+
+  // ===== MOBILE MENU =====
+  function toggleMobile() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+  }
+
+  // ===== TOAST =====
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // ===== FORM SUBMIT =====
+  function handleSubmit(e) {
+    e.preventDefault();
+    showToast('🔥 Session booked! Check your email for confirmation.');
+    e.target.reset();
+  }
+
+  // ===== NAVBAR SCROLL EFFECT =====
+  let lastScroll = 0;
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const current = window.scrollY;
+    if (current > 100) {
+      nav.style.borderBottomColor = 'rgba(255,255,255,0.08)';
+    } else {
+      nav.style.borderBottomColor = 'rgba(255,255,255,0.05)';
+    }
+    lastScroll = current;
+  });
+
+  // ===== CURSOR GLOW (desktop only) =====
+  if (window.innerWidth > 768) {
+    const glow = document.createElement('div');
+    glow.style.cssText = 'position:fixed;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.06),transparent 70%);pointer-events:none;z-index:1;transition:transform 0.15s ease-out;';
+    document.body.appendChild(glow);
+    document.addEventListener('mousemove', (e) => {
+      glow.style.transform = `translate(${e.clientX - 150}px, ${e.clientY - 150}px)`;
+    });
+  }
+</script>
+</body>
+</html>
